@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JLPT Grammar Quiz</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #07081a; --card: #11132e; --chip: #0b0d24; --text: #e6e7fa; --muted: #9298c9; --border: #262b5a;
+    --accent: #8b5cf6; --accent-text: #c4b5fd; --accent-soft: #231a52; --navy: #1e2a78;
+    --primary: linear-gradient(135deg, #3730a3, #7c3aed);
+    --ok: #5eead4; --ok-soft: #0d2c33; --bad: #fb7185; --bad-soft: #351329;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--text); min-height: 100vh;
+         background: radial-gradient(900px 500px at 15% -120px, #1b1f5e 0%, transparent 70%),
+                     radial-gradient(800px 500px at 100% 0, #2e1065 0%, transparent 65%), var(--bg);
+         background-attachment: fixed;
+         font: 16px/1.55 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; background: linear-gradient(90deg, #a5b4fc, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, .35); padding: 20px; margin-bottom: 16px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+  legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips label { cursor: pointer; }
+  .chips input { position: absolute; opacity: 0; pointer-events: none; }
+  .chips span { display: inline-block; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--chip); }
+  .chips input:checked + span { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+  .chips input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  select { font: inherit; color: var(--text); background: var(--chip); border: 1px solid var(--border); border-radius: 10px;
+           padding: 8px 12px; width: 100%; max-width: 360px; }
+  select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hint { color: var(--muted); font-size: .875rem; margin-top: 6px; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); padding: 10px 16px; }
+  button.primary { background: var(--primary); border-color: transparent; color: #fff; font-weight: 600; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .spacer { flex: 1; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: .9rem; margin-bottom: 8px; gap: 8px; }
+  .progress { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+  .progress div { height: 100%; background: var(--primary); transition: width .2s; }
+  .ask { color: var(--muted); font-size: .9rem; margin: 0 0 8px; }
+  .prompt { font-size: 1.7rem; line-height: 2.3; margin: 0 0 4px; word-break: break-word; }
+  .prompt.en, .prompt.def { font-size: 1.25rem; line-height: 1.6; }
+  rt { font-size: .65em; color: var(--muted); }
+  /* Furigana keep their space while hidden so the text doesn't shift when toggled. */
+  #quiz.furi-off rt { visibility: hidden; }
+  #quiz .prompt { cursor: pointer; }
+  .options { display: grid; gap: 8px; margin-top: 16px; }
+  .opt { text-align: left; display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; font-size: 1.2rem; line-height: 2.1; }
+  .opt .k { color: var(--muted); font-size: .8rem; min-width: 1em; }
+  .opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+  .tag { color: var(--accent-text); background: var(--accent-soft); border-radius: 999px; padding: 1px 8px; font-size: .8rem; margin-left: 6px; }
+  .opt.correct { border-color: var(--ok); background: var(--ok-soft); opacity: 1; }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); opacity: 1; }
+  .feedback { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .feedback .verdict { font-weight: 700; margin-bottom: 6px; }
+  .feedback .verdict.ok { color: var(--ok); } .feedback .verdict.bad { color: var(--bad); }
+  .feedback dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 1.05rem; line-height: 2; }
+  .feedback dt { color: var(--muted); } .feedback dd { margin: 0; }
+  .score { font-size: 2.5rem; font-weight: 700; margin: 0; }
+  .missed { list-style: none; padding: 0; margin: 0; }
+  .missed li { padding: 10px 0; border-top: 1px solid var(--border); }
+  .missed .m-q { font-size: 1.15rem; line-height: 2.2; } .missed .m-a { color: var(--muted); font-size: .9rem; }
+  .hidden { display: none !important; }
+  kbd { font: .8rem ui-monospace, monospace; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>JLPT Grammar Quiz</h1>
+  <p class="sub">N5 / N4 grammar, sentences and vocabulary from your quiz bank.</p>
+
+  <section id="setup" class="card">
+    <fieldset>
+      <legend><label for="mode">Mode</label></legend>
+      <select id="mode"></select>
+      <div class="hint" id="modeHint"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Level</legend>
+      <div class="chips">
+        <label><input type="checkbox" name="level" value="N5" checked><span>N5</span></label>
+        <label><input type="checkbox" name="level" value="N4" checked><span>N4</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Questions</legend>
+      <div class="chips">
+        <label><input type="radio" name="count" value="10"><span>10</span></label>
+        <label><input type="radio" name="count" value="20" checked><span>20</span></label>
+        <label><input type="radio" name="count" value="50"><span>50</span></label>
+        <label><input type="radio" name="count" value="0"><span>All</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Furigana</legend>
+      <div class="chips">
+        <label><input type="radio" name="furi" value="show" checked><span>Show</span></label>
+        <label><input type="radio" name="furi" value="hide"><span>Hide (tap or Space to reveal)</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <div class="chips">
+        <label><input type="checkbox" id="missedOnly"><span>Only questions I've missed</span></label>
+      </div>
+      <div class="hint" id="poolInfo"></div>
+    </fieldset>
+    <div class="row">
+      <button class="primary" id="startBtn">Start quiz</button>
+      <span class="spacer"></span>
+      <button id="resetBtn" title="Forget which questions you've missed">Reset history</button>
+    </div>
+  </section>
+
+  <section id="quiz" class="hidden">
+    <div class="topbar"><span id="qNum"></span><span id="qScore"></span><button id="quitBtn">Quit</button></div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="card">
+      <p class="ask" id="ask"></p>
+      <div class="prompt" id="prompt"></div>
+      <div class="options" id="options"></div>
+      <div class="feedback hidden" id="feedback"></div>
+      <div class="row hidden" id="nextRow" style="margin-top:16px">
+        <span class="hint">Press <kbd>Enter</kbd> to continue</span><span class="spacer"></span>
+        <button class="primary" id="nextBtn">Next</button>
+      </div>
+    </div>
+    <p class="hint">Keys: <kbd>1</kbd>–<kbd>4</kbd> to answer, <kbd>Space</kbd> or tap the sentence to show/hide furigana, <kbd>Enter</kbd> for next.</p>
+  </section>
+
+  <section id="results" class="hidden">
+    <div class="card">
+      <p class="score" id="finalScore"></p>
+      <p class="sub" id="finalSub" style="margin:0 0 16px"></p>
+      <div class="row">
+        <button class="primary" id="againBtn">New quiz</button>
+        <button id="retryBtn">Retry missed</button>
+        <button id="setupBtn">Change settings</button>
+      </div>
+    </div>
+    <div class="card" id="missedCard">
+      <legend style="font-weight:600;margin-bottom:8px">Missed on the first try</legend>
+      <ul class="missed" id="missedList"></ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const STORE_KEY = "jlptQuiz.missed.v1";
+  let DATA, conceptById = {};
+
+  const store = {
+    load() { try { return new Set(JSON.parse(localStorage.getItem(STORE_KEY) || "[]")); } catch { return new Set(); } },
+    save(set) { try { localStorage.setItem(STORE_KEY, JSON.stringify([...set])); } catch {} },
+  };
+  let missedHistory = store.load();
+
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  // Pick up to n distinct distractor labels from pool, excluding the correct label.
+  function distractors(pool, correct, n = 3) {
+    const out = new Set();
+    for (const x of shuffle(pool.slice())) {
+      if (x !== correct) out.add(x);
+      if (out.size >= n) break;
+    }
+    return [...out];
+  }
+
+  // Study-note terms carry their reading as furigana when the notes give one.
+  const termHtml = n => n.reading && n.reading !== n.term
+    ? `<ruby>${esc(n.term)}<rt>${esc(n.reading)}</rt></ruby>` : esc(n.term);
+
+  const example = s => `<dt>Example</dt><dd>${s.ja}</dd><dt>English</dt><dd>${s.en}</dd>`;
+
+  // Each mode: build(levels) -> list of items; question(item, levels) -> {ask, prompt, promptClass, answer, options, details}
+  const MODES = {
+    concept: {
+      label: "Sentence → grammar", hint: "Read a sentence and pick the grammar point it demonstrates.",
+      items: lv => DATA.sentences.filter(s => lv.has(conceptById[s.c].level)),
+      question(s, lv) {
+        const c = conceptById[s.c];
+        const names = DATA.concepts.filter(x => lv.has(x.level)).map(x => x.name);
+        return { ask: "Which grammar point is used here?", prompt: s.ja, answer: c.name,
+                 options: [c.name, ...distractors(names, c.name)],
+                 details: `<dt>Grammar</dt><dd>${esc(c.name)} <span class="hint">(${c.level})</span></dd><dt>Meaning</dt><dd>${esc(c.def)}</dd><dt>English</dt><dd>${s.en}</dd>` };
+      },
+    },
+    meaning: {
+      label: "Japanese → English", hint: "Pick the correct translation of the Japanese sentence.",
+      items: lv => DATA.sentences.filter(s => lv.has(conceptById[s.c].level)),
+      question(s, lv) {
+        const pool = DATA.sentences.filter(x => x.c !== s.c && lv.has(conceptById[x.c].level)).map(x => x.en);
+        const c = conceptById[s.c];
+        return { ask: "What does this mean?", prompt: s.ja, answer: s.en, options: [s.en, ...distractors(pool, s.en)],
+                 details: `<dt>Grammar</dt><dd>${esc(c.name)} — ${esc(c.def)}</dd>` };
+      },
+    },
+    reverse: {
+      label: "English → Japanese", hint: "Pick the Japanese sentence that matches the English.",
+      items: lv => DATA.sentences.filter(s => lv.has(conceptById[s.c].level)),
+      question(s, lv) {
+        const pool = DATA.sentences.filter(x => x.c !== s.c && lv.has(conceptById[x.c].level)).map(x => x.ja);
+        const c = conceptById[s.c];
+        return { ask: "Which Japanese sentence means this?", prompt: s.en, promptClass: "en", answer: s.ja,
+                 options: [s.ja, ...distractors(pool, s.ja)],
+                 details: `<dt>Grammar</dt><dd>${esc(c.name)} — ${esc(c.def)}</dd>` };
+      },
+    },
+    definition: {
+      label: "Definition → grammar", hint: "Read an explanation and pick the grammar point it describes.",
+      items: lv => DATA.concepts.filter(c => lv.has(c.level)),
+      question(c, lv) {
+        const names = DATA.concepts.filter(x => lv.has(x.level)).map(x => x.name);
+        const ex = DATA.sentences.find(s => s.c === c.id);
+        return { ask: "Which grammar point matches this description?", prompt: esc(c.def), promptClass: "def", answer: c.name,
+                 options: [c.name, ...distractors(names, c.name)], details: ex ? example(ex) : "" };
+      },
+    },
+    vocab: {
+      label: "Study notes: term → meaning", hint: "Vocabulary, readings and grammar from your own study notes.",
+      items: lv => DATA.notes.filter(n => lv.has(n.level) && n.meaning),
+      question(n, lv) {
+        const pool = DATA.notes.filter(x => x.type === n.type && lv.has(x.level) && x.meaning).map(x => x.meaning);
+        const extra = [n.reading && `<dt>Reading</dt><dd>${esc(n.reading)}</dd>`,
+                       n.ex && `<dt>Example</dt><dd>${esc(n.ex)}</dd>`,
+                       n.exEn && `<dt>English</dt><dd>${esc(n.exEn)}</dd>`].filter(Boolean).join("");
+        return { ask: `What does this mean? (${n.type})`, prompt: termHtml(n), answer: n.meaning,
+                 options: [n.meaning, ...distractors(pool, n.meaning)], details: extra };
+      },
+    },
+    reading: {
+      label: "Study notes: kanji → reading", hint: "Pick the correct reading for words from your notes.",
+      items: lv => DATA.notes.filter(n => lv.has(n.level) && n.reading),
+      question(n, lv) {
+        const pool = DATA.notes.filter(x => lv.has(x.level) && x.reading).map(x => x.reading);
+        return { ask: "How is this read?", prompt: esc(n.term), answer: n.reading,
+                 options: [n.reading, ...distractors(pool, n.reading)],
+                 details: `<dt>Meaning</dt><dd>${esc(n.meaning)}</dd>` };
+      },
+    },
+  };
+
+  // Answer labels for text modes are plain text; Japanese sentence modes are already-sanitized HTML.
+  const isHtmlLabel = mode => mode === "reverse" || mode === "meaning";
+  const labelHtml = (mode, s) => isHtmlLabel(mode) ? s : esc(s);
+
+  // ---------- setup ----------
+  $("mode").innerHTML = Object.entries(MODES).map(([k, m]) => `<option value="${k}">${m.label}</option>`).join("");
+
+  const settings = () => ({
+    mode: $("mode").value,
+    levels: new Set([...document.querySelectorAll("input[name=level]:checked")].map(x => x.value)),
+    count: +document.querySelector("input[name=count]:checked").value,
+    furi: document.querySelector("input[name=furi]:checked").value,
+    missedOnly: $("missedOnly").checked,
+  });
+  const keyOf = (mode, item) => `${mode}:${item.id}`;
+
+  function pool(cfg) {
+    let items = MODES[cfg.mode].items(cfg.levels);
+    if (cfg.missedOnly) items = items.filter(it => missedHistory.has(keyOf(cfg.mode, it)));
+    return items;
+  }
+
+  function refreshSetup() {
+    if (!DATA) return;
+    const cfg = settings();
+    $("modeHint").textContent = MODES[cfg.mode].hint;
+    const n = pool(cfg).length;
+    $("poolInfo").textContent = `${n} question${n === 1 ? "" : "s"} available` +
+      (missedHistory.size ? ` · ${missedHistory.size} missed in history` : "");
+    $("startBtn").disabled = n === 0;
+    try { localStorage.setItem("jlptQuiz.settings", JSON.stringify({ ...cfg, levels: [...cfg.levels] })); } catch {}
+  }
+  $("setup").addEventListener("change", refreshSetup);
+
+  function restoreSettings() {
+    let s; try { s = JSON.parse(localStorage.getItem("jlptQuiz.settings")); } catch {}
+    if (!s) return;
+    const set = (name, v) => { const el = document.querySelector(`input[name=${name}][value="${v}"]`); if (el) el.checked = true; };
+    if (MODES[s.mode]) $("mode").value = s.mode;
+    set("count", s.count); set("furi", s.furi);
+    document.querySelectorAll("input[name=level]").forEach(el => el.checked = s.levels.includes(el.value));
+  }
+
+  // ---------- quiz ----------
+  let run;
+
+  function start(items, cfg) {
+    shuffle(items);
+    if (cfg.count) items = items.slice(0, cfg.count);
+    // items is a queue: a missed question is appended again until answered correctly.
+    run = { cfg, items, total: items.length, i: 0, correct: 0, missed: [], missedIds: new Set(), answered: false };
+    show("quiz");
+    render();
+  }
+
+  function setFuri(on) { run.furiOn = on; $("quiz").classList.toggle("furi-off", !on); }
+
+  function show(id) { ["setup", "quiz", "results"].forEach(s => $(s).classList.toggle("hidden", s !== id)); }
+
+  function render() {
+    const { cfg, items, i } = run;
+    const item = items[i];
+    const q = MODES[cfg.mode].question(item, cfg.levels);
+    run.q = q; run.answered = false;
+    setFuri(cfg.furi === "show");
+    run.isRetry = i >= run.total;
+    $("qNum").innerHTML = `Question ${i + 1} / ${items.length}` + (run.isRetry ? `<span class="tag">Retry</span>` : "");
+    $("qScore").textContent = scoreText();
+    $("bar").style.width = `${i / items.length * 100}%`;
+    $("ask").textContent = q.ask;
+    const p = $("prompt");
+    p.className = "prompt " + (q.promptClass || "");
+    p.innerHTML = q.prompt;
+    const opts = shuffle(q.options.slice());
+    $("options").innerHTML = opts.map((o, n) =>
+      `<button class="opt" data-i="${n}"><span class="k">${n + 1}</span><span>${labelHtml(cfg.mode, o)}</span></button>`).join("");
+    $("options").querySelectorAll(".opt").forEach((b, n) => b.onclick = () => answer(opts[n], b));
+    run.opts = opts;
+    $("feedback").classList.add("hidden");
+    $("nextRow").classList.add("hidden");
+  }
+
+  function answer(choice, btn) {
+    if (run.answered) return;
+    run.answered = true;
+    const { q, cfg } = run;
+    const item = run.items[run.i];
+    const ok = choice === q.answer;
+    const key = keyOf(cfg.mode, item);
+    $("options").querySelectorAll(".opt").forEach((b, n) => {
+      b.disabled = true;
+      if (run.opts[n] === q.answer) b.classList.add("correct");
+    });
+    if (ok) {
+      // Only a first-try correct answer clears a question from the missed history.
+      if (!run.isRetry) { run.correct++; missedHistory.delete(key); }
+    } else {
+      btn.classList.add("wrong");
+      if (!run.missedIds.has(item.id)) { run.missedIds.add(item.id); run.missed.push({ item, q }); }
+      missedHistory.add(key);
+      run.items.push(item);
+    }
+    store.save(missedHistory);
+    setFuri(true);
+    $("qNum").innerHTML = `Question ${run.i + 1} / ${run.items.length}` + (run.isRetry ? `<span class="tag">Retry</span>` : "");
+    $("qScore").textContent = scoreText();
+    const fb = $("feedback");
+    fb.innerHTML = `<div class="verdict ${ok ? "ok" : "bad"}">${ok ? "Correct!" : "Not quite — this one will come back at the end."}</div>` +
+      (ok ? "" : `<dl style="margin-bottom:8px"><dt>Answer</dt><dd>${labelHtml(cfg.mode, q.answer)}</dd></dl>`) +
+      (q.details ? `<dl>${q.details}</dl>` : "");
+    fb.classList.remove("hidden");
+    $("nextRow").classList.remove("hidden");
+    $("nextBtn").focus({ preventScroll: true });
+  }
+
+  const scoreText = () => `${run.correct} / ${run.total} first try`;
+
+  function next() {
+    if (!run.answered) return;
+    run.i++;
+    if (run.i < run.items.length) render(); else finish();
+  }
+
+  function finish() {
+    const { correct, missed, cfg } = run;
+    // If the quiz was quit early, score only the first-try questions actually reached.
+    const reached = Math.min(run.items.length, run.i + (run.answered ? 1 : 0));
+    const total = Math.min(run.total, reached) || 1;
+    const retries = Math.max(0, reached - run.total);
+    $("finalScore").textContent = `${correct} / ${total}`;
+    $("finalSub").textContent = `${Math.round(correct / total * 100)}% on the first try` +
+      (retries ? ` · ${retries} retr${retries === 1 ? "y" : "ies"}` : "") + ` · ${MODES[cfg.mode].label}`;
+    $("retryBtn").disabled = !missed.length;
+    $("missedCard").classList.toggle("hidden", !missed.length);
+    $("missedList").innerHTML = missed.map(({ q }) =>
+      `<li><div class="m-q">${q.prompt}</div><div class="m-a">→ ${labelHtml(cfg.mode, q.answer)}</div></li>`).join("");
+    show("results");
+  }
+
+  $("prompt").addEventListener("click", () => setFuri(!run.furiOn));
+  $("nextBtn").onclick = next;
+  $("quitBtn").onclick = () => run.i || run.answered ? finish() : (show("setup"), refreshSetup());
+  $("startBtn").onclick = () => { const cfg = settings(); start(pool(cfg), cfg); };
+  $("againBtn").onclick = () => start(pool(run.cfg), run.cfg);
+  $("retryBtn").onclick = () => start(run.missed.map(m => m.item), { ...run.cfg, count: 0 });
+  $("setupBtn").onclick = () => { show("setup"); refreshSetup(); };
+  $("resetBtn").onclick = () => {
+    if (confirm("Forget all missed-question history?")) { missedHistory = new Set(); store.save(missedHistory); refreshSetup(); }
+  };
+
+  document.addEventListener("keydown", e => {
+    if ($("quiz").classList.contains("hidden") || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!run.answered && /^[1-4]$/.test(e.key)) {
+      const b = $("options").querySelectorAll(".opt")[+e.key - 1];
+      if (b) b.click();
+    } else if (e.key === " ") {
+      e.preventDefault(); setFuri(!run.furiOn);
+    } else if (run.answered && e.key === "Enter") {
+      e.preventDefault(); next();
+    }
+  });
+  // Space would otherwise also press whichever button has focus (activation happens on keyup).
+  document.addEventListener("keyup", e => {
+    if (e.key === " " && !$("quiz").classList.contains("hidden")) e.preventDefault();
+  });
+
+  // ---------- load ----------
+  $("startBtn").disabled = true;
+  $("poolInfo").textContent = "Loading questions…";
+  fetch("data.json").then(r => r.json()).then(d => {
+    DATA = d;
+    d.concepts.forEach(c => conceptById[c.id] = c);
+    restoreSettings();
+    refreshSetup();
+  }).catch(err => { $("poolInfo").textContent = "Couldn't load data.json: " + err.message; });
+})();
+</script>
+</body>
+</html>
