@@ -13,7 +13,7 @@
     --ok: #5eead4; --ok-soft: #0d2c33; --bad: #fb7185; --bad-soft: #351329;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; color: var(--text); min-height: 100vh;
+  body { margin: 0; color: var(--text); min-height: 100vh; touch-action: manipulation;
          background: radial-gradient(900px 500px at 15% -120px, #1b1f5e 0%, transparent 70%),
                      radial-gradient(800px 500px at 100% 0, #2e1065 0%, transparent 65%), var(--bg);
          background-attachment: fixed;
@@ -50,6 +50,12 @@
   /* Furigana keep their space while hidden so the text doesn't shift when toggled. */
   #quiz.furi-off rt { visibility: hidden; }
   #quiz .prompt { cursor: pointer; }
+  /* Keyboard hints only make sense with a keyboard; touchscreens get a tap hint instead. */
+  .touch-hint { display: none; }
+  @media (hover: none) and (pointer: coarse) {
+    .kbd-hint { display: none; }
+    .touch-hint { display: block; }
+  }
   .options { display: grid; gap: 8px; margin-top: 16px; }
   .opt { text-align: left; display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; font-size: 1.2rem; line-height: 2.1; }
   .opt .k { color: var(--muted); font-size: .8rem; min-width: 1em; }
@@ -126,11 +132,12 @@
       <div class="options" id="options"></div>
       <div class="feedback hidden" id="feedback"></div>
       <div class="row hidden" id="nextRow" style="margin-top:16px">
-        <span class="hint">Press <kbd>Enter</kbd> to continue</span><span class="spacer"></span>
+        <span class="hint kbd-hint">Press <kbd>Enter</kbd> to continue</span><span class="spacer"></span>
         <button class="primary" id="nextBtn">Next</button>
       </div>
     </div>
-    <p class="hint">Keys: <kbd>1</kbd>–<kbd>4</kbd> to answer, <kbd>Space</kbd> or tap the sentence to show/hide furigana, <kbd>Enter</kbd> for next.</p>
+    <p class="hint kbd-hint">Keys: <kbd>1</kbd>–<kbd>4</kbd> to answer, <kbd>Space</kbd> or click any empty space to show/hide furigana, <kbd>Enter</kbd> for next.</p>
+    <p class="hint touch-hint">Tap anywhere outside the buttons to show/hide furigana.</p>
   </section>
 
   <section id="results" class="hidden">
@@ -388,7 +395,16 @@
     show("results");
   }
 
-  $("prompt").addEventListener("click", () => setFuri(!run.furiOn));
+  // A tap/click anywhere on the quiz screen that isn't on a control toggles furigana, like Space.
+  // Rapid repeat taps (a double-tap) count once.
+  let lastToggle = -Infinity;
+  document.addEventListener("click", e => {
+    if ($("quiz").classList.contains("hidden") || e.target.closest("button, a, input, select, label")) return;
+    if (e.timeStamp - lastToggle < 350) return;
+    if (String(window.getSelection())) return; // the user was selecting text, not tapping
+    lastToggle = e.timeStamp;
+    setFuri(!run.furiOn);
+  });
   $("nextBtn").onclick = next;
   $("quitBtn").onclick = () => run.i || run.answered ? finish() : (show("setup"), refreshSetup());
   $("startBtn").onclick = () => { const cfg = settings(); start(pool(cfg), cfg); };

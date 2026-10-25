@@ -15,7 +15,7 @@ An interactive N5 / N4 grammar quiz built from `_quiz_bank.md`, hosted on GitHub
 
 Missed questions are re-asked at the end of each quiz until answered correctly, and are remembered in the browser for "Only questions I've missed".
 
-Keys: `1`–`4` answer, `Space` (or tap the sentence) shows/hides furigana, `Enter` goes to the next question.
+Keys: `1`–`4` answer, `Space` (or tapping anywhere outside the buttons) shows/hides furigana, `Enter` goes to the next question.
 
 ## Updating the questions
 
