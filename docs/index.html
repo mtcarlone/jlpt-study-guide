@@ -72,6 +72,14 @@
   .missed { list-style: none; padding: 0; margin: 0; }
   .missed li { padding: 10px 0; border-top: 1px solid var(--border); }
   .missed .m-q { font-size: 1.15rem; line-height: 2.2; } .missed .m-a { color: var(--muted); font-size: .9rem; }
+  /* Phones: slightly smaller quiz text so long sentences wrap less. */
+  @media (max-width: 600px) {
+    .prompt { font-size: 1.4rem; line-height: 2.2; }
+    .prompt.en, .prompt.def { font-size: 1.1rem; }
+    .opt { font-size: 1.05rem; line-height: 2; padding: 10px 12px; }
+    .feedback dl { font-size: .95rem; }
+    .missed .m-q { font-size: 1.05rem; }
+  }
   .hidden { display: none !important; }
   kbd { font: .8rem ui-monospace, monospace; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
 </style>
