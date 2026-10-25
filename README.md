@@ -1,4 +1,4 @@
-# JLPT Study Guide
+# JLPT N5, N4 Study Tool
 
 An interactive N5 / N4 grammar quiz built from `_quiz_bank.md`, hosted on GitHub Pages.
 
