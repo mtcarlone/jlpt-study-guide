@@ -12,6 +12,7 @@ An interactive N5 / N4 grammar quiz built from `_quiz_bank.md`, hosted on GitHub
 - Definition → grammar point
 - Study notes: term → meaning
 - Study notes: kanji → reading
+- Everything: a random mix of all of the above
 
 Missed questions are re-asked at the end of each quiz until answered correctly, and are remembered in the browser for "Only questions I've missed".
 

@@ -265,6 +265,25 @@
     },
   };
 
+  // Everything: a mix of every other mode. Items are interleaved by picking a random mode each
+  // step, so a short quiz isn't dominated by the sentence modes (which have far more questions).
+  const SUBMODES = Object.keys(MODES);
+  MODES.everything = {
+    label: "Everything (all modes mixed)", hint: "A random mix of every mode above.", balanced: true,
+    items(lv) {
+      const lists = SUBMODES.map(m => shuffle(MODES[m].items(lv).map(it => ({ id: `${m}:${it.id}`, m, it }))))
+        .filter(l => l.length);
+      const out = [];
+      while (lists.length) {
+        const k = Math.random() * lists.length | 0;
+        out.push(lists[k].pop());
+        if (!lists[k].length) lists.splice(k, 1);
+      }
+      return out;
+    },
+    question: (w, lv) => ({ ...MODES[w.m].question(w.it, lv), mode: w.m }),
+  };
+
   // Answer labels for text modes are plain text; Japanese sentence modes are already-sanitized HTML.
   const isHtmlLabel = mode => mode === "reverse" || mode === "meaning";
   const labelHtml = (mode, s) => isHtmlLabel(mode) ? s : esc(s);
@@ -279,7 +298,7 @@
     furi: document.querySelector("input[name=furi]:checked").value,
     missedOnly: $("missedOnly").checked,
   });
-  const keyOf = (mode, item) => `${mode}:${item.id}`;
+  const keyOf = (mode, item) => item.m ? `${item.m}:${item.it.id}` : `${mode}:${item.id}`;
 
   function pool(cfg) {
     let items = MODES[cfg.mode].items(cfg.levels);
@@ -312,7 +331,7 @@
   let run;
 
   function start(items, cfg) {
-    shuffle(items);
+    if (!MODES[cfg.mode].balanced) shuffle(items);
     if (cfg.count) items = items.slice(0, cfg.count);
     // items is a queue: a missed question is appended again until answered correctly.
     run = { cfg, items, total: items.length, i: 0, correct: 0, missed: [], missedIds: new Set(), answered: false };
@@ -340,7 +359,7 @@
     p.innerHTML = q.prompt;
     const opts = shuffle(q.options.slice());
     $("options").innerHTML = opts.map((o, n) =>
-      `<button class="opt" data-i="${n}"><span class="k">${n + 1}</span><span>${labelHtml(cfg.mode, o)}</span></button>`).join("");
+      `<button class="opt" data-i="${n}"><span class="k">${n + 1}</span><span>${labelHtml(q.mode || cfg.mode, o)}</span></button>`).join("");
     $("options").querySelectorAll(".opt").forEach((b, n) => b.onclick = () => answer(opts[n], b));
     run.opts = opts;
     $("feedback").classList.add("hidden");
@@ -373,7 +392,7 @@
     $("qScore").textContent = scoreText();
     const fb = $("feedback");
     fb.innerHTML = `<div class="verdict ${ok ? "ok" : "bad"}">${ok ? "Correct!" : "Not quite — this one will come back at the end."}</div>` +
-      (ok ? "" : `<dl style="margin-bottom:8px"><dt>Answer</dt><dd>${labelHtml(cfg.mode, q.answer)}</dd></dl>`) +
+      (ok ? "" : `<dl style="margin-bottom:8px"><dt>Answer</dt><dd>${labelHtml(q.mode || cfg.mode, q.answer)}</dd></dl>`) +
       (q.details ? `<dl>${q.details}</dl>` : "");
     fb.classList.remove("hidden");
     $("nextRow").classList.remove("hidden");
@@ -402,7 +421,7 @@
     $("retryBtn").disabled = !missed.length;
     $("missedCard").classList.toggle("hidden", !missed.length);
     $("missedList").innerHTML = missed.map(({ q }) =>
-      `<li><div class="m-q">${q.prompt}</div><div class="m-a">→ ${labelHtml(cfg.mode, q.answer)}</div></li>`).join("");
+      `<li><div class="m-q">${q.prompt}</div><div class="m-a">→ ${labelHtml(q.mode || cfg.mode, q.answer)}</div></li>`).join("");
     show("results");
   }
 
@@ -420,7 +439,7 @@
   $("quitBtn").onclick = () => run.i || run.answered ? finish() : (show("setup"), refreshSetup());
   $("startBtn").onclick = () => { const cfg = settings(); start(pool(cfg), cfg); };
   $("againBtn").onclick = () => start(pool(run.cfg), run.cfg);
-  $("retryBtn").onclick = () => start(run.missed.map(m => m.item), { ...run.cfg, count: 0 });
+  $("retryBtn").onclick = () => start(shuffle(run.missed.map(m => m.item)), { ...run.cfg, count: 0 });
   $("setupBtn").onclick = () => { show("setup"); refreshSetup(); };
   $("resetBtn").onclick = () => {
     if (confirm("Forget all missed-question history?")) { missedHistory = new Set(); store.save(missedHistory); refreshSetup(); }
