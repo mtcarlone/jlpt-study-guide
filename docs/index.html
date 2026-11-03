@@ -510,7 +510,9 @@
   // ---------- load ----------
   $("startBtn").disabled = true;
   $("poolInfo").textContent = "Loading questions…";
-  fetch("data.json").then(r => r.json()).then(d => {
+  // GitHub Pages lets browsers reuse data.json for 10 minutes; "no-cache" makes the browser check
+  // for a newer copy every time (a cheap 304 when unchanged), so a new page never pairs with old data.
+  fetch("data.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
     DATA = d;
     d.words = d.words || [];
     d.concepts.forEach(c => conceptById[c.id] = c);
