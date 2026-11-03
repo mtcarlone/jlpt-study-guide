@@ -25,11 +25,14 @@ def safe_html(text):
 
 
 def main():
-    concepts, sentences, notes = {}, [], []
+    concepts, sentences, notes, words = {}, [], [], []
     section = "sentences"
     for line in SRC.read_text(encoding="utf-8").splitlines():
         if line.startswith("## Study notes"):
             section = "notes"
+            continue
+        if line.startswith("## Vocabulary"):
+            section = "words"
             continue
         if not line.startswith("| ") or line.startswith("| ID") or line.startswith("| ---"):
             continue
@@ -39,15 +42,18 @@ def main():
             key = sid.rsplit("-", 1)[0]  # e.g. N5-01
             concepts.setdefault(key, {"id": key, "level": level, "name": concept, "def": definition})
             sentences.append({"id": sid, "c": key, "ja": safe_html(ja), "plain": safe_html(ja_plain), "en": safe_html(en)})
+        elif section == "words":
+            wid, level, term, reading, meaning = c
+            words.append({"id": wid, "level": level, "term": term, "reading": reading, "meaning": meaning})
         else:
             nid, ntype, level, term, reading, meaning, ex, ex_en = c
             notes.append({"id": nid, "type": ntype, "level": level, "term": term,
                           "reading": reading, "meaning": meaning, "ex": ex, "exEn": ex_en})
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({"concepts": list(concepts.values()), "sentences": sentences, "notes": notes},
+    OUT.write_text(json.dumps({"concepts": list(concepts.values()), "sentences": sentences, "notes": notes, "words": words},
                               ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"{len(concepts)} concepts, {len(sentences)} sentences, {len(notes)} notes -> {OUT.relative_to(ROOT)}")
+    print(f"{len(concepts)} concepts, {len(sentences)} sentences, {len(notes)} notes, {len(words)} vocabulary words -> {OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

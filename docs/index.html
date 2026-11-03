@@ -182,9 +182,10 @@
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
   // Pick up to n distinct distractor labels from pool, excluding the correct label.
-  function distractors(pool, correct, n = 3) {
+  // ordered: take them in pool order (the pool is already ranked) instead of at random.
+  function distractors(pool, correct, n = 3, ordered = false) {
     const out = new Set();
-    for (const x of shuffle(pool.slice())) {
+    for (const x of ordered ? pool : shuffle(pool.slice())) {
       if (x !== correct) out.add(x);
       if (out.size >= n) break;
     }
@@ -263,7 +264,52 @@
                  details: `<dt>Meaning</dt><dd>${esc(n.meaning)}</dd>` };
       },
     },
+    wordMeaning: {
+      label: "Vocabulary: word → meaning", hint: "N5 / N4 words from the j-nihongo.com vocabulary lists. Furigana can be hidden.",
+      items: lv => DATA.words.filter(w => lv.has(w.level)),
+      question(w, lv) {
+        const pool = DATA.words.filter(x => lv.has(x.level)).map(x => x.meaning);
+        return { ask: "What does this word mean?", prompt: wordHtml(w), answer: w.meaning,
+                 options: [w.meaning, ...distractors(pool, w.meaning)], details: wordDetails(w) };
+      },
+    },
+    wordReading: {
+      label: "Vocabulary: kanji → reading", hint: "Pick the reading of a word written in kanji. Wrong answers prefer words that share a kanji.",
+      items: lv => DATA.words.filter(w => lv.has(w.level) && hasKanji(w)),
+      question(w, lv) {
+        const pool = wordPool(w, lv).filter(hasKanji).map(x => x.reading);
+        return { ask: "How is this read?", prompt: esc(w.term), answer: w.reading,
+                 options: [w.reading, ...distractors(pool, w.reading, 3, true)], details: wordDetails(w) };
+      },
+    },
+    wordWrite: {
+      label: "Vocabulary: meaning → word", hint: "Read the English meaning and pick the Japanese word.",
+      items: lv => DATA.words.filter(w => lv.has(w.level)),
+      question(w, lv) {
+        // Skip words with the same meaning (青 / 青い are both "blue") so only one option is right.
+        const pool = wordPool(w, lv).filter(x => x.meaning !== w.meaning).map(x => x.term);
+        return { ask: "Which word means this?", prompt: esc(w.meaning), promptClass: "def", answer: w.term,
+                 options: [w.term, ...distractors(pool, w.term, 3, true)], details: wordDetails(w) };
+      },
+    },
   };
+
+  const KANJI_CHAR = /[一-鿿々]/g;
+  const kanjiOf = w => w.term.match(KANJI_CHAR) || [];
+  const hasKanji = w => kanjiOf(w).length > 0;
+  // Furigana only over words that contain kanji (the site gives katakana words a hiragana reading too).
+  const wordHtml = w => hasKanji(w) ? termHtml(w) : esc(w.term);
+  const wordDetails = w => `<dt>Word</dt><dd>${wordHtml(w)}</dd><dt>Reading</dt><dd>${esc(w.reading)}</dd>` +
+    `<dt>Meaning</dt><dd>${esc(w.meaning)}</dd><dt>Level</dt><dd>${w.level}</dd>`;
+
+  // Other words at the selected levels, with up to two that share a kanji with w first,
+  // so wrong answers are plausible look-alikes (e.g. 学校 → 学生, 中学) rather than random.
+  function wordPool(w, lv) {
+    const chars = new Set(kanjiOf(w));
+    const others = shuffle(DATA.words.filter(x => x !== w && lv.has(x.level)));
+    const near = others.filter(x => kanjiOf(x).some(c => chars.has(c))).slice(0, 2);
+    return [...near, ...others.filter(x => !near.includes(x))];
+  }
 
   // Everything: a mix of every other mode. Items are interleaved by picking a random mode each
   // step, so a short quiz isn't dominated by the sentence modes (which have far more questions).
@@ -466,6 +512,7 @@
   $("poolInfo").textContent = "Loading questions…";
   fetch("data.json").then(r => r.json()).then(d => {
     DATA = d;
+    d.words = d.words || [];
     d.concepts.forEach(c => conceptById[c.id] = c);
     restoreSettings();
     refreshSetup();

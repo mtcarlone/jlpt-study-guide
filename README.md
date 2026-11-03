@@ -1,6 +1,6 @@
 # JLPT Study Tool
 
-An interactive N5 / N4 grammar quiz built from `_quiz_bank.md`, hosted on GitHub Pages.
+An interactive N5 / N4 grammar and vocabulary quiz built from `_quiz_bank.md`, hosted on GitHub Pages.
 
 **Live quiz:** https://mtcarlone.github.io/jlpt-study-guide/
 
@@ -12,6 +12,7 @@ An interactive N5 / N4 grammar quiz built from `_quiz_bank.md`, hosted on GitHub
 - Definition → grammar point
 - Study notes: term → meaning
 - Study notes: kanji → reading
+- Vocabulary: word → meaning, kanji → reading, meaning → word (the j-nihongo.com N5 + N4 vocabulary lists; use the Level chips to pick one or both)
 - Everything: a random mix of all of the above
 
 Missed questions are re-asked at the end of each quiz until answered correctly, and are remembered in the browser for "Only questions I've missed".
@@ -27,6 +28,12 @@ python3 scripts/build_quiz.py
 ```
 
 This writes `docs/data.json`. Commit and push both files; GitHub Pages redeploys automatically.
+
+The `## Vocabulary` section is generated from the j-nihongo.com N5 and N4 vocabulary lists, copied exactly as the site gives them. To refresh it:
+
+```sh
+python3 scripts/import_vocabulary.py && python3 scripts/build_quiz.py
+```
 
 ## Running locally
 
