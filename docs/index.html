@@ -265,7 +265,7 @@
       },
     },
     wordMeaning: {
-      label: "Vocabulary: word → meaning", hint: "N5 / N4 words from the j-nihongo.com vocabulary lists. Furigana can be hidden.",
+      label: "Vocabulary: word → meaning", hint: "Pick the meaning of an N5 / N4 vocabulary word. Furigana can be hidden.",
       items: lv => DATA.words.filter(w => lv.has(w.level)),
       question(w, lv) {
         const pool = DATA.words.filter(x => lv.has(x.level)).map(x => x.meaning);
