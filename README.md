@@ -11,8 +11,8 @@ An interactive N5 / N4 grammar and vocabulary quiz built from `_quiz_bank.md`, h
 - English → Japanese
 - Definition → grammar point
 - Study notes: term → meaning
-- Study notes: kanji → reading
-- Vocabulary: word → meaning, kanji → reading, meaning → word (the j-nihongo.com N5 + N4 vocabulary lists; use the Level chips to pick one or both)
+- Study notes: word → reading
+- Vocabulary: word → meaning, kanji → reading, meaning → word (N5 + N4 vocabulary; use the Level chips to pick one or both)
 - Everything: a random mix of all of the above
 
 Missed questions are re-asked at the end of each quiz until answered correctly, and are remembered in the browser for "Only questions I've missed".

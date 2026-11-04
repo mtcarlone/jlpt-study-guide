@@ -255,12 +255,12 @@
       },
     },
     reading: {
-      label: "Study notes: kanji → reading", hint: "Pick the correct reading for words from your notes.",
+      label: "Study notes: word → reading", hint: "Pick the correct reading for words from your notes. Wrong answers prefer words that share a kanji.",
       items: lv => DATA.notes.filter(n => lv.has(n.level) && n.reading),
       question(n, lv) {
-        const pool = DATA.notes.filter(x => lv.has(x.level) && x.reading).map(x => x.reading);
+        const pool = lookalikesFirst(n, DATA.notes.filter(x => lv.has(x.level) && x.reading)).map(x => x.reading);
         return { ask: "How is this read?", prompt: esc(n.term), answer: n.reading,
-                 options: [n.reading, ...distractors(pool, n.reading)],
+                 options: [n.reading, ...distractors(pool, n.reading, 3, true)],
                  details: `<dt>Meaning</dt><dd>${esc(n.meaning)}</dd>` };
       },
     },
@@ -302,14 +302,15 @@
   const wordDetails = w => `<dt>Word</dt><dd>${wordHtml(w)}</dd><dt>Reading</dt><dd>${esc(w.reading)}</dd>` +
     `<dt>Meaning</dt><dd>${esc(w.meaning)}</dd><dt>Level</dt><dd>${w.level}</dd>`;
 
-  // Other words at the selected levels, with up to two that share a kanji with w first,
+  // The other entries of list in random order, with up to two that share a kanji with w first,
   // so wrong answers are plausible look-alikes (e.g. 学校 → 学生, 中学) rather than random.
-  function wordPool(w, lv) {
+  function lookalikesFirst(w, list) {
     const chars = new Set(kanjiOf(w));
-    const others = shuffle(DATA.words.filter(x => x !== w && lv.has(x.level)));
+    const others = shuffle(list.filter(x => x !== w));
     const near = others.filter(x => kanjiOf(x).some(c => chars.has(c))).slice(0, 2);
     return [...near, ...others.filter(x => !near.includes(x))];
   }
+  const wordPool = (w, lv) => lookalikesFirst(w, DATA.words.filter(x => lv.has(x.level)));
 
   // Everything: a mix of every other mode. Items are interleaved by picking a random mode each
   // step, so a short quiz isn't dominated by the sentence modes (which have far more questions).
