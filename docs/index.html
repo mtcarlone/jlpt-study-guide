@@ -255,7 +255,7 @@
       },
     },
     reading: {
-      label: "Study notes: word → reading", hint: "Pick the correct reading for words from your notes. Wrong answers prefer words that share a kanji.",
+      label: "Study notes: word → reading", hint: "Pick the correct reading for words from your notes.",
       items: lv => DATA.notes.filter(n => lv.has(n.level) && n.reading),
       question(n, lv) {
         const pool = lookalikesFirst(n, DATA.notes.filter(x => lv.has(x.level) && x.reading)).map(x => x.reading);
@@ -274,7 +274,7 @@
       },
     },
     wordReading: {
-      label: "Vocabulary: kanji → reading", hint: "Pick the reading of a word written in kanji. Wrong answers prefer words that share a kanji.",
+      label: "Vocabulary: kanji → reading", hint: "Pick the reading of a word written in kanji.",
       items: lv => DATA.words.filter(w => lv.has(w.level) && hasKanji(w)),
       question(w, lv) {
         const pool = wordPool(w, lv).filter(hasKanji).map(x => x.reading);
